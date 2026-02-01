@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Private P2P Chat</title>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+        body { font-family: sans-serif; display: flex; justify-content: center; padding: 20px; background: #f0f2f5; }
+        .chat-container { width: 100%; max-width: 400px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        #chat-box { height: 300px; border: 1px solid #ddd; border-radius: 4px; overflow-y: auto; padding: 10px; margin-bottom: 10px; background: #fafafa; }
+        .controls, .input-area { display: flex; gap: 5px; margin-bottom: 10px; }
+        input { flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        button { padding: 8px 15px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .status { font-size: 0.8em; color: #666; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="chat-container">
+    <h3>P2P Chat</h3>
+    <div class="status">Your ID: <b id="my-id">loading...</b></div>
+    
+    <div class="controls">
+        <input type="text" id="friend-id" placeholder="Friend's ID">
+        <button onclick="connectToFriend()">Connect</button>
+    </div>
+
+    <div id="chat-box"></div>
+
+    <div class="input-area">
+        <input type="text" id="message-input" placeholder="Type a message..." onkeypress="if(event.key==='Enter') sendMessage()">
+        <button onclick="sendMessage()">Send</button>
+    </div>
+</div>
+
+
+
+<script>
+    const peer = new Peer();
+    let conn;
+
+    peer.on('open', (id) => {
+        document.getElementById('my-id').innerText = id;
+    });
+
+    peer.on('connection', (connection) => {
+        conn = connection;
+        initConnection();
+    });
+
+    function connectToFriend() {
+        const id = document.getElementById('friend-id').value;
+        if (!id) return;
+        conn = peer.connect(id);
+        initConnection();
+    }
+
+    function initConnection() {
+        conn.on('open', () => {
+            appendMessage('System', 'Connected to friend');
+            conn.on('data', (data) => {
+                appendMessage('Friend', data);
+            });
+        });
+    }
+
+    function sendMessage() {
+        const input = document.getElementById('message-input');
+        const msg = input.value;
+        if (msg && conn && conn.open) {
+            conn.send(msg);
+            appendMessage('You', msg);
+            input.value = '';
+        }
+    }
+
+    function appendMessage(sender, text) {
+        const box = document.getElementById('chat-box');
+        const msgElement = document.createElement('p');
+        msgElement.innerHTML = `<b>${sender}:</b> ${text}`;
+        box.appendChild(msgElement);
+        box.scrollTop = box.scrollHeight;
+    }
+</script>
+
+</body>
+</html>
